@@ -4,8 +4,10 @@ const mongoose = require("mongoose")
 const express = require("express")
 const blog = require("./Blog_Model")
 const user = require("./Author_Model")
+const jwt = require("jsonwebtoken")
 app = express()
 const port = 4000
+const secret_key = "Kunisha@$890#125"
 
 app.use(express.json());
 app.use(express.urlencoded({extended : true}))
@@ -41,10 +43,15 @@ app.post("/signup" , async(req , res)=>{
         const newUser = new user ({
             name , email , password:hashedPassword
         })
+        const token = jwt.sign({name : newUser.name , email: newUser.email} , 
+            secret_key , {expiresIn : "1d"})
 
         await newUser.save();
-        res.send("User is registered sucessfully.");
+        res.send({message:
+            "User is registered sucessfully." 
+            , token});
         console.log(newUser);
+        console.log(token)
     } 
     catch (error) {
         res.send("Error in registering:" , error)
@@ -67,8 +74,18 @@ app.post("/login" , async(req , res)=>{
         const isCorrect = await bcrypt.compare(password , existingUser.password);
 
         if(isCorrect){
-            console.log("Sucessfully logged in :",{email , password});
-            return res.send("Login successfull.")
+            // console.log("Sucessfully logged in :",{email , password});
+            // return res.send("Login successfull.")
+            const token = jwt.sign(
+                { id: existingUser._id, email: existingUser.email },
+                "yourSecretKey", // Replace with an environment variable for production
+                { expiresIn: "1h" } // Token expires in 1 hour
+            );
+
+            console.log("Successfully logged in:", { email });
+            return res.json({ message: "Login successful.", token });
+
+            
         }
         else{
             return res.send("Incorrect password.")
